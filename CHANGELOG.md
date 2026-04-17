@@ -5,6 +5,18 @@ All notable changes to RegMon are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Tamper-evident audit trail** – each audit log entry now contains `prev_hash = sha256(previous raw entry)`, forming a hash chain per daily log file. Tampering, deletion, and insertion are deterministically detectable. Includes `verify_audit_chain()` for on-demand integrity verification. Addresses GxP and BSI baseline protection requirements for audit log integrity.
+- **Developer tooling** – ruff (lint + format) and mypy (type checking) configured as pre-commit hooks. A policy test ensures lint compliance across the entire codebase on every test run.
+
+### Changed
+- Codebase formatted and modernized via ruff: consistent Python syntax, sorted imports, uniform whitespace. No semantic changes.
+
+### Fixed
+- Undefined variable bug in summary pipeline that could cause failures during night-mode PDF processing — caught by ruff static analysis.
+
 ## [2.1.5] – 2026-04-17
 
 ### Added
