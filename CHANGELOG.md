@@ -8,13 +8,17 @@ versioning follows [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- **Tamper-evident audit trail** – each audit log entry now contains `prev_hash = sha256(previous raw entry)`, forming a hash chain per daily log file. Tampering, deletion, and insertion are deterministically detectable. Includes `verify_audit_chain()` for on-demand integrity verification. Addresses GxP and BSI baseline protection requirements for audit log integrity.
+- **Time-budgeted summary processing** – the summary generator now processes events newest-first and stops cleanly when less than 15 minutes remain before the night-mode window closes. Remaining events carry over to the next night. Prevents long-running jobs from blocking subsequent scheduler slots.
+- **Tamper-evident audit trail** – each audit log entry contains `prev_hash = sha256(previous raw entry)`, forming a hash chain per daily log file. Tampering, deletion, and insertion are deterministically detectable. Includes `verify_audit_chain()` for on-demand integrity verification. Addresses GxP and BSI baseline protection requirements.
 - **Developer tooling** – ruff (lint + format) and mypy (type checking) configured as pre-commit hooks. A policy test ensures lint compliance across the entire codebase on every test run.
+- **Optimized night-mode scheduling** – full pipeline now runs within the night window in logical sequence: fetchers (23:00–00:00), aggregator (00:30), summary generator (01:00, 3h budget), deep scan (01:30, 2.5h worker time). A regression test prevents future cron changes from undermining the time budget.
 
 ### Changed
 - Codebase formatted and modernized via ruff: consistent Python syntax, sorted imports, uniform whitespace. No semantic changes.
 
 ### Fixed
+- Summary generator previously received only 10 minutes of night-mode budget and processed zero events. Cron schedule reorganized to provide 3 hours of processing time.
+- PDF URLs in event metadata were incorrectly parsed as HTML by BeautifulSoup, causing encoding warnings and garbage text being sent to the LLM. Non-HTML content types are now filtered before parsing, and explicit encoding hints are passed to the parser.
 - Undefined variable bug in summary pipeline that could cause failures during night-mode PDF processing — caught by ruff static analysis.
 
 ## [2.1.5] – 2026-04-17
