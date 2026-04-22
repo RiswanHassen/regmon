@@ -8,8 +8,10 @@ versioning follows [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
-- **Time-budgeted summary processing** – the summary generator now processes events newest-first and stops cleanly when less than 15 minutes remain before the night-mode window closes. Remaining events carry over to the next night. Prevents long-running jobs from blocking subsequent scheduler slots.
+- **Daily self-test** – automated preflight check runs 10 minutes before the first nightly fetcher. Validates scheduler jobs, log files and routing, volume writability, Ollama availability (graceful degradation), recent fetcher errors, and audit log hash-chain integrity. Results available via `GET /api/healthcheck`.
 - **Tamper-evident audit trail** – each audit log entry contains `prev_hash = sha256(previous raw entry)`, forming a hash chain per daily log file. Tampering, deletion, and insertion are deterministically detectable. Includes `verify_audit_chain()` for on-demand integrity verification. Addresses GxP and BSI baseline protection requirements.
+- **Per-container log persistence** – all three containers (scheduler, events, settings) now write to rotating log files on the persistent volume. Docker stdout is snapshot before each container recreate. No logs are ever lost during deployments.
+- **Time-budgeted summary processing** – the summary generator processes events newest-first and stops cleanly when less than 15 minutes remain before the night-mode window closes. Remaining events carry over to the next night.
 - **Developer tooling** – ruff (lint + format) and mypy (type checking) configured as pre-commit hooks. A policy test ensures lint compliance across the entire codebase on every test run.
 - **Optimized night-mode scheduling** – full pipeline now runs within the night window in logical sequence: fetchers (23:00–00:00), aggregator (00:30), summary generator (01:00, 3h budget), deep scan (01:30, 2.5h worker time). A regression test prevents future cron changes from undermining the time budget.
 
@@ -17,9 +19,14 @@ versioning follows [Semantic Versioning](https://semver.org/).
 - Codebase formatted and modernized via ruff: consistent Python syntax, sorted imports, uniform whitespace. No semantic changes.
 
 ### Fixed
-- Summary generator previously received only 10 minutes of night-mode budget and processed zero events. Cron schedule reorganized to provide 3 hours of processing time.
-- PDF URLs in event metadata were incorrectly parsed as HTML by BeautifulSoup, causing encoding warnings and garbage text being sent to the LLM. Non-HTML content types are now filtered before parsing, and explicit encoding hints are passed to the parser.
-- Undefined variable bug in summary pipeline that could cause failures during night-mode PDF processing — caught by ruff static analysis.
+- **Binary files never reach the LLM** – ZIP, EXE, ISO, MSI, TAR.GZ and related binary formats are now short-circuited before any LLM call. A deterministic filename-based summary is generated instead (e.g. "KBV FHIR eRezept · Version 1.4.2 (Paket)"). Eliminates hallucinations where the LLM invented content from filenames.
+- **Deep Scan format consistency** – LLM output is now normalized to remove markdown artifacts. Prompt tightened with explicit section structure requirements.
+- **Logging isolation** – `configure_logging()` moved from module-level to `main()` in all entrypoints. Previously, the healthcheck's import check triggered logging reconfiguration, routing all scheduler logs to the wrong file for an entire night run.
+- **KBV Apache directory encoding** – UTF-8 hint passed to BeautifulSoup parser, fixing garbled German umlauts in directory names.
+- **KBV phantom updates eliminated** – Apache directory size rounding (±1 KB) no longer triggers false change detection. Configurable tolerance via environment variable.
+- **PDF URL parsing** – non-HTML content types are now filtered before BeautifulSoup parsing, eliminating encoding warnings and garbage text being sent to the LLM.
+- Undefined variable bug in summary pipeline caught by ruff static analysis.
+- Summary generator cron schedule reorganized to provide 3 hours of processing time instead of 10 minutes.
 
 ## [2.1.5] – 2026-04-17
 
