@@ -8,6 +8,13 @@ versioning follows [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Added
+- **Two-tier LLM model strategy** – separate models for short summaries/tagging vs. deep full-text scans, selected via `REGMON_LLM_PROFILE` (`standard`/`low`); `REGMON_LLM_MODEL` and `REGMON_DEEP_SCAN_MODEL` override individual stages.
+- **Hardware scan & model recommendation** – detects CPU/RAM/GPU/disk and recommends a fitting profile and deep-scan model. Endpoint `GET /api/system/hardware`. Standard library only, no external calls.
+- **Optional GPU support** – `docker-compose.gpu.yml` grants the Ollama container GPU access on capable hosts (requires the NVIDIA container toolkit); CPU-only remains the default.
+- **Installer hardware auto-detection** – `install.sh` probes the target host and auto-selects LLM profile and deep-scan model (`--llm-profile auto`, default), with `--llm-profile` and `--deep-model` overrides.
+- **Admin panel pipeline & display controls** – manual triggers for aggregator, summary generator, and deep scan with last-run statistics (`GET /api/jobs/status`, `POST /api/jobs/{job}/run`); summary management with non-destructive single-item reset (`GET /api/summaries`, `POST /api/summaries/{id}/reset`); and display settings (dark mode, accent color, branding) persisted in `config/display.json` and applied live on the dashboard.
+- **Role-based access & account recovery** – `admin` and `operator` roles, enforced first-login password change, admin-initiated password reset, and a four-eyes consensus recovery flow.
+- **Settings override loader** – settings changed in the admin panel (`settings_override.json`) now take effect on a plain restart, without a full redeployment.
 - **Customer onboarding installer** (`install.sh`) – automated deployment to x86_64 Ubuntu servers via SSH. Builds amd64 Docker image, transfers it, sets up the project structure, syncs fetchers and compose files, pulls Ollama with the configured model, starts containers, waits for healthy status, and verifies the dashboard endpoint. Fully idempotent and parameterized (`--host`, `--user`, `--timezone`, `--skip-ollama-pull`). Validated end-to-end against a staging VM with 609 events across all sources.
 - **Night-run simulation tool** – development utility that runs the full pipeline (fetchers → aggregator → summary → deep scan) sequentially in minutes instead of hours. Supports `--skip-fetchers`, `--skip-llm`, `--max-events`, and configurable deep scan timeout. Eliminates the need to wait for nightly cron runs during development.
 - **Daily self-test** – automated pre-flight check runs 10 minutes before the first nightly fetcher. Validates scheduler jobs, log file integrity, log routing (cross-pollution guard), volume writability, Ollama reachability (graceful degradation), recent fetcher errors, and audit log hash-chain integrity. Results available via `GET /api/healthcheck`.
@@ -24,6 +31,7 @@ versioning follows [Semantic Versioning](https://semver.org/).
 - Codebase formatted and modernized via ruff. No semantic changes.
 
 ### Fixed
+- **Self-lockout on password change** – changing one's own password no longer revokes the active session; the user stays logged in after the change.
 - **Logging isolation** – importing modules no longer installs file handlers as a side effect. Previously, the healthcheck's import validation rerouted all scheduler logs to the wrong file for an entire night run. Three regression tests prevent recurrence.
 - **KBV encoding** – Apache directory listings with UTF-8 paths (e.g., "UV-GOÄ") were decoded as Latin-1, producing garbled characters.
 - **KBV phantom updates** – Zulassungsverzeichnis PDFs appeared daily as "changed" due to ±1 KB rounding in Apache's size display. Configurable size tolerance filters noise while preserving real change detection.
