@@ -5,6 +5,11 @@ All notable changes to RegMon are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **RegMon mark.** The product now has its own logo – the hexagon of the RH Advisory brand family with a Δ for “change” – used as the favicon of the dashboard and the admin console, as a small inline mark in both page headers, and in this README. No behaviour changed, no new routes.
+
 ## [2.2.4] – 2026-09-17
 
 ### Changed

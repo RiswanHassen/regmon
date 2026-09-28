@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/regmon-mark.png" width="112" alt="RegMon"></p>
+
 # RegMon
 
 **Automated Regulatory Monitoring for Healthcare IT**
