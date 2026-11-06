@@ -7,8 +7,21 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.3.0] – 2026-11-06
+
 ### Added
+- **Feature catalogue: core and modules.** Every function is named and delimited in one place: a core that is always included (standard sources, ledger and dashboard, audit trail, administration, self-test, operator guides, offline installation) and five modules that can be shipped or withheld – capture evidence, AI summaries, deep analysis, custom sources, emergency access. A module that is not licensed stays visible and inactive everywhere: no scheduled job, HTTP 403 on its endpoints, a greyed-out tab and missing buttons in the dashboard, a licence card in the admin console, a self-test check. Activation order: a vendor-signed licence file, then `REGMON_FEATURES`, then grandfathering – an installation without either keeps everything, so an update never takes anything away.
+- **Vendor key shipped.** The public Ed25519 key `ed25519-1` is part of the package; licences, emergency grants and monthly report signatures are now verifiable on every installation. The private key stays offline with the vendor.
+- **Capture guarantee, stage 1 (2026-10-07).** Source register as the contractual scope with a warranty regime per source (`standard`, `maintained`, `customer-owned`); coverage book with exactly one record per source and agreed point in time (`OK`/`PARTIAL`/`FAILED`/`MISSED`), append-only and hash-chained across month boundaries; an hourly reconciliation job that records runs that did *not* happen; acknowledgements with a mandatory reason; a plausibility check against the silent failure (HTTP 200, zero items from a source that used to deliver); an immediate, once-only deviation alarm with the record written before any delivery attempt; the dashboard tab "Coverage".
+- **Capture guarantee, stage 3 – evidence a third party can check.** A daily head per UTC day (hash of the day's audit chain, state of the coverage book at day end, register hash, chained to the previous head, catching up after downtime); a deterministic monthly capture report – no language model – grouped by warranty regime, with deviations and their closure, register changes, the head chain, the text of what is not guaranteed, and a content hash (JSON and Markdown); a month head for export, signed offline by the vendor and stored in the new admin tab "Evidence" – only a signature that verifies and matches today's report state is accepted, and RegMon then shows whether the data has changed since signing.
+- **Status "later".** A fifth classification with its own tab: neither done nor irrelevant, deliberately without a retention period, reachable from open and in progress, and a third training label for adaptive sorting.
+- **Release gate.** A customer bundle is built only after the full test suite and the linter pass; the gate is recorded in the bundle metadata.
+- **Public demo export.** The dashboard of the reference instance can be exported as a static site restricted to the standard sources, with every product function visible but locked.
+
 - **RegMon mark.** The product now has its own logo – the hexagon of the RH Advisory brand family with a Δ for “change” – used as the favicon of the dashboard and the admin console, as a small inline mark in both page headers, and in this README. No behaviour changed, no new routes.
+
+### Fixed
+- The dashboard header lost the product mark when a brand name was configured in the admin console; only the text is replaced now.
 
 ## [2.2.4] – 2026-09-17
 

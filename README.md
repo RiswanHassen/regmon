@@ -28,6 +28,8 @@ Most organizations handle this with manual checks, email newsletters, and spread
 - **Produces audit trails** — every detected change and every operator action is timestamped and hash-chained across day boundaries; nothing is ever deleted, items older than 180 days move to an Archive tab
 - **Leaves customer data alone** — an update never reads, writes, or deletes the ledger, audit trail, archive, or configuration; the installer backs up the runtime volume before every update
 - **Serves a dashboard** for at-a-glance regulatory status, filterable by source, severity, status, and date range, plus an admin panel for sources, schedules, policy, users, and pipeline control
+- **Proves what it captured** – a source register as the contractual scope, a coverage book with one hash-chained record per source and agreed point in time (including the runs that did not happen), a daily head chain and a deterministic monthly capture report that the vendor signs offline; a changed data set breaks visibly against the signed head
+- **Comes as a core with modules** – standard sources, ledger, audit trail, administration, self-test and offline installation are always included; capture evidence, AI summaries, deep analysis, custom sources and emergency access are licensed modules that stay visible and inactive when not booked
 - **Runs entirely on-premise** — no data leaves the network. Designed for a Raspberry Pi 5 or equivalent embedded hardware
 
 ## Architecture
