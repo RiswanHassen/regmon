@@ -28,7 +28,9 @@ Most organizations handle this with manual checks, email newsletters, and spread
 - **Produces audit trails** — every detected change and every operator action is timestamped and hash-chained across day boundaries; nothing is ever deleted, items older than 180 days move to an Archive tab
 - **Leaves customer data alone** — an update never reads, writes, or deletes the ledger, audit trail, archive, or configuration; the installer backs up the runtime volume before every update
 - **Serves a dashboard** for at-a-glance regulatory status, filterable by source, severity, status, and date range, plus an admin panel for sources, schedules, policy, users, and pipeline control
-- **Proves what it captured** – a source register as the contractual scope, a coverage book with one hash-chained record per source and agreed point in time (including the runs that did not happen), a daily head chain and a deterministic monthly capture report that the vendor signs offline; a changed data set breaks visibly against the signed head
+- **Proves what it captured** – a source register as the contractual scope (generated per installation, maintained in the admin console with a reason and an audit entry), a coverage book with one hash-chained record per source and agreed point in time (including the runs that did not happen), a daily head chain and a deterministic monthly capture report that the vendor signs offline; a changed data set breaks visibly against the signed head
+- **Four eyes on every exception** – a deviation in the coverage book is acknowledged by one person with a reason and confirmed by a second; until then it stays visible in the dashboard, the self-test and the monthly report
+- **Explains itself when something goes wrong** – a diagnostics tab collects warnings and errors of all services in one traffic light, with a support report to copy in which addresses and user names are masked; RegMon never sends anything on its own
 - **Comes as a core with modules** – standard sources, ledger, audit trail, administration, self-test and offline installation are always included; capture evidence, AI summaries, deep analysis, custom sources and emergency access are licensed modules that stay visible and inactive when not booked
 - **Runs entirely on-premise** — no data leaves the network. Designed for a Raspberry Pi 5 or equivalent embedded hardware
 
@@ -62,12 +64,13 @@ Most organizations handle this with manual checks, email newsletters, and spread
                          │
               ┌──────────▼──────────┐
               │   Storage + Audit    │  JSON ledger, hash-chained audit
-              │   Trail              │  log, run register, archive
+              │   Trail              │  log, coverage book, daily heads,
+              │                      │  run register, archive
               └──────────┬──────────┘
                          │
               ┌──────────▼──────────┐
               │   FastAPI Dashboard  │  Status management, filtering,
-              │   + Admin Panel      │  self-test, settings, users
+              │   + Admin Panel      │  evidence, diagnostics, settings
               └─────────────────────┘
 ```
 
@@ -80,6 +83,7 @@ Most organizations handle this with manual checks, email newsletters, and spread
 - **Updates never touch your data** — the software is licensed; what it collects belongs to the customer. Volume backup before every update.
 - **Night mode** — heavy processing (PDF downloads, LLM summaries, deep scans) runs during configurable night hours to keep daytime performance responsive.
 - **One fetcher per source** — modular plugin architecture. Adding a new regulatory source is a single Python file.
+- **Core and modules** — every function is named and delimited; a module that is not licensed stays visible and inactive, and an installation without a licence file keeps everything it has (an update never takes anything away).
 
 ## Deployment
 
@@ -93,7 +97,7 @@ Timezone is configurable via `REGMON_TIMEZONE` — deployable globally without c
 
 Active development. In production since Q1 2026.
 
-Current version: **2.2.4** — see [CHANGELOG.md](CHANGELOG.md) for release notes.
+Current version: **2.4.0** (2026-11-10) — see [CHANGELOG.md](CHANGELOG.md) for release notes. The reference instance runs the current version; customer installations follow with the next offline bundle.
 
 This repository documents the architecture and public release notes. The source code is deployed privately.
 
