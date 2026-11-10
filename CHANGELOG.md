@@ -7,6 +7,14 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.4.0] – 2026-11-10
+
+### Added
+- **Four-eyes principle for acknowledgements.** Acknowledging a deviation in the coverage book explains it; now a *second, different* user confirms the explanation. The confirmation is its own append-only, hash-chained record and is audited; the same user cannot confirm their own acknowledgement, and nothing can be confirmed twice. Until confirmed, the deviation stays visible – "confirmation pending" in the dashboard tab Coverage, the self-test reports `degraded`, and the monthly capture report names both people and times or marks the confirmation as pending. Confirmations are made in the admin console, tab Evidence. The switch `four_eyes` lives in the source register; the register generator sets it as soon as a source with a warranty is registered. An installation with a single account can switch it off (audited).
+- **Source register: create and maintain.** A tool generates the register per installation from the customer feature map (warranty regime by maintenance responsibility, cadences in UTC, validity from the day after installation); bundle and deploy only create it when none exists – an existing register is part of the contract. The admin console shows the register with a list of defects and a reconciliation against the loaded fetchers; changes require a reason and are audited, fail-closed.
+- **Diagnostics tab with error sink and support report.** Every warning or error from scheduler, dashboard and admin API is also stored structured; the new admin tab shows a 24-hour traffic light, counters per level and the entries with their traceback. "Copy for support" produces a text report with masked e-mail addresses, IP addresses and user names – RegMon sends nothing, the admin pastes it into their mail.
+- **Hardened reference deploy.** Release gate (test suite and linter, clean working tree) before the build, a checksummed volume backup before the restart, a post-check (containers healthy, health endpoint, feature catalogue) with a rollback hint.
+
 ## [2.3.0] – 2026-11-06
 
 ### Added
