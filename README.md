@@ -8,6 +8,8 @@ RegMon is an on-premise system that tracks regulatory changes across German heal
 
 **In production since Q1 2026**, developed in collaboration with [Basysdata GmbH](https://www.basysdata.com) (Switzerland), a HealthIT company focused on medical informatics.
 
+**Public demo:** [regmon.rh-advisory.de](https://regmon.rh-advisory.de/) – the real dashboard with the three standard sources (G-BA, Gematik, KBV), refreshed daily from the reference instance; product functions are visible but locked. Click *Erklären* for an explanation of every element, *Neu in …* for what changed in the current release.
+
 ---
 
 ## Problem
