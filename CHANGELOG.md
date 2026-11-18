@@ -7,6 +7,11 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.5.1] – 2026-11-18
+
+### Fixed
+- The admin console header shows the running product version instead of a fixed label.
+
 ## [2.5.0] – 2026-11-18
 
 ### Added
