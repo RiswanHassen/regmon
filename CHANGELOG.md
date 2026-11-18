@@ -7,6 +7,12 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.5.0] – 2026-11-18
+
+### Added
+- **Update channel.** RegMon reminds the operator in the self-test to check for updates (every 30 days) and, on request or on an operator-set interval, asks the vendor's update instance whether a new version is available for this installation. The answer is a manifest signed with the vendor's Ed25519 key – the same key as licences and monthly reports; without a valid signature nothing is shown. The admin console lists the new version with its release notes and fetches the customer bundle into the volume, verified against size and SHA-256 from the signed manifest; the operator downloads it from there and installs it following the runbook. **Nothing installs itself.** Exactly one outbound call per check (channel id and token, no payload data); the channel is a module – no outbound call without it or when the operator switches the channel off. Everything is audited.
+- **Public demo with an explain mode.** The static export of the real dashboard now explains itself: hover cards per element with core or module attribution, a "new in this version" sheet, a core-and-modules overview, deep links for articles, German and English. The demo is published through GitHub Pages from a single-commit branch that is replaced on every run.
+
 ## [2.4.0] – 2026-11-10
 
 ### Added
