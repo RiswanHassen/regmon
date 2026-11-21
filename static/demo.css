@@ -1,0 +1,202 @@
+/* RegMon – öffentliche Demo: Banner, Sperrzustand, Hinweis. Ergänzt regmon.css. */
+
+#demoBanner {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-bottom: 3px solid var(--accent, #3b82f6);
+  padding: 0.7rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1.5rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+#demoBanner .demo-text { flex: 1 1 520px; }
+#demoBanner strong { color: #fff; }
+#demoBanner .demo-links { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+#demoBanner a {
+  color: #fff;
+  text-decoration: none;
+  border: 1px solid #475569;
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  white-space: nowrap;
+}
+#demoBanner a:hover { border-color: #cbd5e1; }
+#demoBanner a.demo-cta { background: var(--accent, #3b82f6); border-color: var(--accent, #3b82f6); font-weight: 600; }
+#demoBanner a.demo-cta:hover { opacity: 0.9; }
+
+/* Gesperrt: sichtbar, erkennbar inaktiv, Klick erklärt sich (demo.js). */
+#modeToggle,
+button.danger,
+.controls button.secondary,
+#authIndicator,
+.tab[data-tab="coverage"],
+.tab[data-tab="audit"],
+.status-btn,
+.deep-scan-btn,
+button[onclick^="ackDeviation"],
+#licFooterLink {
+  opacity: 0.45;
+  filter: grayscale(1);
+  cursor: not-allowed !important;
+}
+button.danger:hover,
+.controls button.secondary:hover,
+.status-btn:hover,
+.deep-scan-btn:hover,
+.tab[data-tab="coverage"]:hover,
+.tab[data-tab="audit"]:hover { opacity: 0.45; background: inherit; }
+.tab[data-tab="audit"].demo-locked { display: inline-block; }
+
+/* Der Aktualisierungsstand steht im Banner; der Auto-Update-Hinweis wäre irreführend. */
+#updateStatus { display: none; }
+/* Der Export enthält nur ein Fenster von 30 Tagen (max. 180 Tage Alter); ein Filter darauf wäre ohne Wirkung. */
+#filterMaxAge { display: none; }
+/* Die Melde-Adresse gehört in den Kundenbetrieb, nicht auf eine öffentliche Seite. */
+.summary a[href^="mailto:"] { display: none; }
+
+#demoToast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%) translateY(20px);
+  background: #0f172a;
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 9700;
+  max-width: 90vw;
+}
+#demoToast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 700px) {
+  #demoBanner { padding: 0.6rem 1rem; font-size: 0.8rem; }
+}
+
+/* --- Erklären-Modus (Tour, seit 2026-11-10) ------------------------------- */
+#demoBanner button.demo-btn {
+  color: #fff;
+  background: transparent;
+  border: 1px solid #475569;
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#demoBanner button.demo-btn:hover { border-color: #cbd5e1; }
+#demoBanner button.demo-btn[aria-pressed="true"] { background: #1e293b; border-color: #cbd5e1; }
+/* Der Erklären-Knopf ist der Einstieg in die Demo – auffällig rot gerahmt (Inhaber 2026-11-18). */
+#demoBanner #demoTourBtn {
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.14);
+  font-weight: 700;
+  padding: 0.35rem 1rem;
+}
+#demoBanner #demoTourBtn:hover { background: rgba(239, 68, 68, 0.3); border-color: #f87171; }
+#demoBanner #demoTourBtn[aria-pressed="true"] { background: #ef4444; border-color: #ef4444; color: #fff; }
+
+/* Platzhalter-Kacheln für eigene Quellen: sichtbar, ausgegraut, erklären sich im Erklären-Modus. */
+#tiles .tile.demo-custom {
+  opacity: 0.6;
+  border-left: 4px dashed #94a3b8;
+  background: #f8fafc;
+  cursor: not-allowed;
+}
+#tiles .tile.demo-custom .source { color: #94a3b8; }
+#tiles .tile.demo-custom .count { color: #94a3b8; font-size: 1.6rem; line-height: 1.25; }
+#tiles .tile.demo-custom .demo-custom-hint { font-size: 0.68rem; color: #94a3b8; }
+body.tour-on #tiles .tile.demo-custom { cursor: help; opacity: 0.85; }
+#demoBanner .demo-version { color: #94a3b8; white-space: nowrap; }
+
+body.tour-on .tour-target {
+  outline: 2px dashed var(--accent, #3b82f6);
+  outline-offset: 3px;
+  cursor: help !important;
+  position: relative;
+}
+body.tour-on .tour-target.tour-active { outline-style: solid; }
+
+#tourCard {
+  position: fixed;
+  z-index: 9800;
+  max-width: 380px;
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-left: 4px solid var(--accent, #3b82f6);
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  display: none;
+}
+#tourCard.show { display: block; }
+#tourCard .tour-title { font-weight: 700; color: #fff; margin-bottom: 0.2rem; }
+#tourCard .tour-module {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #93c5fd;
+  margin-bottom: 0.4rem;
+}
+#tourCard .tour-module.core { color: #86efac; }
+#tourCard ul { margin: 0.4rem 0 0; padding-left: 1.1rem; color: #cbd5e1; }
+#tourCard li { margin: 0.15rem 0; }
+#tourCard .tour-close {
+  position: absolute; top: 0.3rem; right: 0.5rem;
+  background: none; border: none; color: #94a3b8; font-size: 1rem; cursor: pointer;
+}
+
+#tourPanel {
+  position: fixed;
+  inset: 0;
+  z-index: 9850;
+  background: rgba(15, 23, 42, 0.55);
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 4vh 1rem;
+  overflow: auto;
+}
+#tourPanel.show { display: flex; }
+#tourPanel .tour-sheet {
+  background: #fff;
+  color: #0f172a;
+  border-radius: 12px;
+  max-width: 720px;
+  width: 100%;
+  padding: 1.2rem 1.4rem 1.4rem;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  position: relative;
+}
+#tourPanel h2 { margin: 0 0 0.2rem; font-size: 1.15rem; }
+#tourPanel h3 { margin: 1rem 0 0.3rem; font-size: 0.95rem; color: #334155; }
+#tourPanel .tour-sub { color: #64748b; font-size: 0.8rem; }
+#tourPanel ul { padding-left: 1.2rem; margin: 0.3rem 0; }
+#tourPanel li { margin: 0.3rem 0; }
+#tourPanel .tour-show { margin-left: 0.4rem; font-size: 0.8rem; color: var(--accent, #3b82f6); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; }
+#tourPanel .tour-show:hover { text-decoration: underline; }
+#tourPanel .tour-kind { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; margin-right: 0.4rem; }
+#tourPanel .tour-close {
+  position: absolute; top: 0.6rem; right: 0.8rem;
+  background: none; border: none; color: #64748b; font-size: 1.3rem; cursor: pointer;
+}
+#tourPanel a { color: var(--accent, #3b82f6); }
+
+@media (max-width: 700px) {
+  #tourCard { left: 0.5rem !important; right: 0.5rem; max-width: none; top: auto !important; bottom: 0.5rem; }
+}

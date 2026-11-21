@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RegMon Demo – Regulatory Monitoring der Standardquellen G-BA, Gematik, KBV</title>
+<link rel="stylesheet" href="static/regmon.css">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="description" content="Öffentliche Demo von RegMon: der Feed der Standardquellen G-BA, Gematik und KBV der letzten 30 Tage mit mindestens 48 Stunden Verzug, wie ihn das Dashboard zeigt. Erfassung, Einstufung und Nachweis laufen im Produkt on-premise.">
+<meta name="robots" content="index,follow">
+<meta name="regmon-demo-generated" content="2026-11-21T05:24:23+00:00">
+<meta name="regmon-demo-data-cut" content="2026-11-19">
+<link rel="canonical" href="https://regmon.rh-advisory.de/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="RegMon Demo – Regulatory Monitoring der Standardquellen G-BA, Gematik, KBV">
+<meta property="og:description" content="Öffentliche Demo von RegMon: der Feed der Standardquellen G-BA, Gematik und KBV der letzten 30 Tage mit mindestens 48 Stunden Verzug, wie ihn das Dashboard zeigt. Erfassung, Einstufung und Nachweis laufen im Produkt on-premise.">
+<meta property="og:url" content="https://regmon.rh-advisory.de/">
+<meta property="og:site_name" content="RH Advisory">
+<meta property="og:locale" content="de_DE">
+<meta property="og:image" content="https://rh-advisory.de/og/regmon.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://rh-advisory.de/og/regmon.png">
+<link rel="stylesheet" href="static/demo.css">
+</head>
+</head>
+<body>
+<div id="demoBanner" role="note" aria-label="Hinweis zur Demo">
+  <div class="demo-text"><strong>Öffentliche Demo.</strong> Der Feed der Standardquellen G-BA, Gematik und KBV der letzten 30 Tage, wie RegMon ihn im Dashboard zeigt &ndash; Datenstand <span id="demoStand">19.11.2026</span>, mindestens 48 Stunden Verzug, täglich aktualisiert. Die Vollversion zeigt den vollen Zeitraum ohne Verzug. Ausgegraute Funktionen sind in der Vollversion verfügbar. <strong>Erklären</strong> zeigt zu jedem Element, was es tut und zu welchem Modul es gehört.</div>
+  <div class="demo-links"><span class="demo-version">RegMon 2.5.1</span><button type="button" class="demo-btn" id="demoTourBtn" aria-pressed="false">Erklären</button><button type="button" class="demo-btn" id="demoNewBtn">Neu in 2.5.1</button><button type="button" class="demo-btn" id="demoLangBtn" lang="en">EN</button><a href="https://rh-advisory.de/regmon_overview.html">Produktseite</a><a class="demo-cta" href="https://rh-advisory.de/termin.html">Erstgespräch vereinbaren</a><a href="https://rh-advisory.de/regmon_overview-en.html" hreflang="en" lang="en">English</a></div>
+</div>
+
+
+<div id="header">
+  <h1><svg class="brandmark" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="#3b82f6" stroke-width="6" stroke-linejoin="round"/><polygon points="32,20 43,40 21,40" fill="none" stroke="#3b82f6" stroke-width="5" stroke-linejoin="round"/></svg>RegMon Dashboard</h1>
+  <div class="subtitle">RegMon Regulatory Intelligence</div>
+  <div class="controls">
+    <div id="modeToggle">
+      <label>Erweitert:</label>
+      <label class="switch">
+        <input type="checkbox" id="extendedModeCheckbox">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div id="updateStatus">
+      <span class="indicator"></span>
+      <span id="updateStatusText">Auto-Update (60min)</span>
+    </div>
+    <button class="primary" onclick="refresh()">🔄 Aktualisieren</button>
+    <button class="danger" onclick="resetAll()">🔄 Reset All</button>
+    <button class="secondary" onclick="toggleHelpMenu(event)" title="Hilfe / Dokumentation">❓ Hilfe</button>
+  </div>
+</div>
+
+<div class="error" id="errorBox"></div>
+
+<div id="tiles"></div>
+
+<div id="tabs">
+  <div class="tab active" data-tab="open">Open</div>
+  <div class="tab" data-tab="done">Done</div>
+  <div class="tab" data-tab="later" title="Für später vorgemerkt – weder erledigt noch irrelevant, bleibt sichtbar">Später</div>
+  <div class="tab" data-tab="irrelevant">Irrelevant</div>
+  <div class="tab" data-tab="archive" title="Abgeschlossene und irrelevante Einträge älter als 180 Tage – nichts wird gelöscht">Archiv</div>
+  <div class="tab" data-tab="coverage" title="Erfassungsgarantie: je Quelle und Soll-Zeitpunkt ein Satz. Abweichungen wollen quittiert werden.">Abdeckung</div>
+  <div class="tab hidden" data-tab="audit">Audit</div>
+</div>
+
+<div id="filterBar">
+  <label class="filter-checkbox" id="filterMaxAge" title="Events älter als 180 Tage ausblenden">
+    <input type="checkbox" id="hideOldEvents" checked>
+    <span>Max. 180 Tage</span>
+  </label>
+  <label class="filter-checkbox" id="filterHealthcheck" style="display:none;" title="Healthchecks ohne Befund ausblenden">
+    <input type="checkbox" id="hideHealthcheckOk" checked>
+    <span>Healthcheck OK ausblenden</span>
+  </label>
+</div>
+
+<div id="main">
+  <div id="listHeader">
+    <h2 id="listTitle">Open Events</h2>
+  </div>
+  <div id="listContent"></div>
+</div>
+
+<script src="static/demo.js"></script>
+<script>
+// Maintenance-Banner: pollt /api/maintenance alle 3s SAME-ORIGIN (eigenes 8050-Backend,
+// das dasselbe maintenance.flag wie 8051 vom geteilten Volume liest). Kein Cross-Port-
+// Aufruf auf 8051 mehr -> kein CSP-/CORS-/Cookie-Problem im Browser.
+(function startMaintenancePoller() {
+  const MAINT_API = '/api/maintenance';
+  let banner = null;
+  function showBanner() {
+    if (banner) return;
+    banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.85);z-index:9000;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;';
+    banner.innerHTML = '<div style="font-size:1.8rem;margin-bottom:0.75rem;">⚙️</div><div style="font-size:1.1rem;font-weight:600;">Updates im Gange – bitte warten</div><div style="color:#94a3b8;margin-top:0.4rem;font-size:0.85rem;">Das Dashboard wird automatisch neu geladen</div>';
+    document.body.appendChild(banner);
+  }
+  function hideBanner() {
+    if (!banner) return;
+    banner.remove();
+    banner = null;
+  }
+  async function poll() {
+    try {
+      const r = await fetch(MAINT_API, {cache: 'no-store'});
+      const d = await r.json();
+      if (d.maintenance) showBanner(); else hideBanner();
+    } catch(e) { hideBanner(); }  // Check fehlgeschlagen -> Dashboard NICHT blockieren
+    setTimeout(poll, 3000);
+  }
+  poll();
+})();
+
+const API_BASE = window.location.origin;
+let viewData = null;
+let summariesData = {};
+let lastSummariesHash = null;
+let autoUpdateInterval = null;
+
+// Filter references
+const hideOldEventsCheckbox = document.getElementById('hideOldEvents');
+const hideHealthcheckOkCheckbox = document.getElementById('hideHealthcheckOk');
+const filterMaxAgeEl = document.getElementById('filterMaxAge');
+const filterHealthcheckEl = document.getElementById('filterHealthcheck');
+
+hideOldEventsCheckbox.addEventListener('change', () => renderList(viewData));
+hideHealthcheckOkCheckbox.addEventListener('change', () => renderList(viewData));
+
+// API helper
+async function api(path) {
+  const res = await fetch(`${API_BASE}${path}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}
+
+// Error handling
+function showErr(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+
+function hideErr() {
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+  ));
+}
+
+// Hilfe-Menü (gebündelte Bediener-Karten als PDF, on-premise via /api/help).
+const HELP_GUIDES = [
+  {label: '📄 Cheatsheet – Dashboard', name: 'CHEATSHEET_Dashboard'},
+  {label: '🚨 Notfallmanual – Dashboard', name: 'NOTFALL_Dashboard'},
+];
+function toggleHelpMenu(ev) {
+  ev.stopPropagation();
+  const open = document.getElementById('helpMenu');
+  if (open) { open.remove(); return; }
+  const rect = ev.currentTarget.getBoundingClientRect();
+  const menu = document.createElement('div');
+  menu.id = 'helpMenu';
+  menu.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.right - 240)}px;`
+    + 'z-index:9600;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;'
+    + 'box-shadow:0 10px 30px rgba(0,0,0,0.25);padding:0.35rem;min-width:240px;';
+  menu.innerHTML = HELP_GUIDES.map(g =>
+    `<a href="/api/help/${g.name}" target="_blank" rel="noopener" `
+    + 'style="display:block;padding:0.5rem 0.6rem;border-radius:5px;color:inherit;'
+    + `text-decoration:none;font-size:0.85rem;">${g.label}</a>`).join('');
+  document.body.appendChild(menu);
+  menu.querySelectorAll('a').forEach(a => {
+    a.onmouseenter = () => { a.style.background = '#f1f5f9'; };
+    a.onmouseleave = () => { a.style.background = 'transparent'; };
+    a.onclick = () => menu.remove();
+  });
+  setTimeout(() => document.addEventListener('click', function close(e) {
+    if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', close); }
+  }), 0);
+}
+
+// --- Auth (Block 6) ---------------------------------------------------------
+// Lese-Views sind offen; nur schreibende Aktionen (Status, Reset) verlangen
+// eine Session. Das Cookie wird host-weit ausgestellt – ein Login hier ODER
+// im Admin-Panel (8051) genügt. Bei 401 öffnet authedWrite() den Login-Dialog
+// und wiederholt die Aktion.
+let _authUser = null;
+
+async function refreshAuthState() {
+  try {
+    const r = await fetch(`${API_BASE}/api/auth/me`, {cache: 'no-store'});
+    _authUser = r.ok ? (await r.json()).username : null;
+  } catch (e) { _authUser = null; }
+  renderAuthIndicator();
+}
+
+function renderAuthIndicator() {
+  let el = document.getElementById('authIndicator');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'authIndicator';
+    el.style.cssText = 'font-size:0.8rem;color:#64748b;display:flex;align-items:center;gap:0.4rem;';
+    const controls = document.querySelector('#header .controls');
+    if (controls) controls.appendChild(el);
+  }
+  if (_authUser) {
+    el.innerHTML = `🔓 ${escapeHtml(_authUser)} · <a href="#" id="logoutLink" style="color:inherit;text-decoration:underline;">Abmelden</a>`;
+    document.getElementById('logoutLink').onclick = async (e) => {
+      e.preventDefault();
+      try { await fetch(`${API_BASE}/api/auth/logout`, {method: 'POST'}); } catch (err) { /* ignore */ }
+      _authUser = null;
+      renderAuthIndicator();
+    };
+  } else {
+    el.innerHTML = `🔒 <a href="#" id="loginLink" style="color:inherit;text-decoration:underline;">Anmelden</a>`;
+    document.getElementById('loginLink').onclick = (e) => { e.preventDefault(); openLoginModal(); };
+  }
+}
+
+// Öffnet den Login-Dialog; Promise<boolean> = erfolgreich angemeldet?
+function openLoginModal() {
+  return new Promise((resolve) => {
+    const existing = document.getElementById('loginModal');
+    if (existing) existing.remove();
+    const modal = document.createElement('div');
+    modal.id = 'loginModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9500;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML = `
+      <form id="loginForm" style="background:#fff;color:#0f172a;padding:1.5rem;border-radius:8px;min-width:280px;box-shadow:0 10px 40px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:0.75rem;">
+        <h3 style="margin:0;font-size:1.1rem;">Anmeldung erforderlich</h3>
+        <div style="font-size:0.8rem;color:#64748b;">Statusänderungen werden protokolliert.</div>
+        <input id="loginUser" placeholder="Benutzername" autocomplete="username" style="padding:0.5rem;border:1px solid #cbd5e1;border-radius:4px;">
+        <input id="loginPass" type="password" placeholder="Passwort" autocomplete="current-password" style="padding:0.5rem;border:1px solid #cbd5e1;border-radius:4px;">
+        <div id="loginErr" style="color:#dc2626;font-size:0.8rem;display:none;"></div>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;">
+          <button type="button" id="loginCancel">Abbrechen</button>
+          <button type="submit" class="primary">Anmelden</button>
+        </div>
+      </form>`;
+    document.body.appendChild(modal);
+    document.getElementById('loginUser').focus();
+    const showLoginErr = (msg) => {
+      const e = document.getElementById('loginErr');
+      e.textContent = msg; e.style.display = 'block';
+    };
+    document.getElementById('loginCancel').onclick = () => { modal.remove(); resolve(false); };
+    document.getElementById('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('loginUser').value;
+      const password = document.getElementById('loginPass').value;
+      try {
+        const r = await fetch(`${API_BASE}/api/auth/login`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({username, password})
+        });
+        if (r.ok) {
+          const d = await r.json();
+          if (d.must_change_password) {
+            showLoginErr('Passwortwechsel nötig – bitte im Admin-Panel (Port 8051) anmelden.');
+            return;
+          }
+          modal.remove();
+          _authUser = d.username;
+          renderAuthIndicator();
+          resolve(true);
+        } else if (r.status === 429) {
+          showLoginErr('Zu viele Fehlversuche. Bitte später erneut.');
+        } else {
+          showLoginErr('Ungültige Anmeldedaten.');
+        }
+      } catch (err) { showLoginErr('Netzwerkfehler.'); }
+    };
+  });
+}
+
+// fetch-Wrapper für Schreibzugriffe: bei 401 Login öffnen und einmal wiederholen.
+// ---------------------------------------------------------------------------
+// Abdeckung (Erfassungsgarantie Stufe 1)
+// ---------------------------------------------------------------------------
+// Der Reiter zeigt zwei Dinge, und die Reihenfolge ist Absicht: zuerst den
+// Zustand der Kette, dann die offenen Abweichungen. Ein gebrochener Nachweis
+// wiegt schwerer als jede einzelne Luecke — eine Luecke ist dokumentiert, ein
+// Bruch heisst, dass die Dokumentation nicht mehr traegt.
+function coverageHtml(cov) {
+  const chain = cov.chain || {};
+  let html = "";
+
+  if (chain.ok === false) {
+    html += `<div class="empty" style="border:2px solid #c0392b;color:#c0392b;font-weight:bold">
+      Kette gebrochen bei ${escapeHtml(chain.broken_at || "?")} &ndash; ${escapeHtml(chain.reason || "")}<br>
+      <span style="font-weight:normal">Der Nachweis traegt nicht mehr. Bitte RH Advisory verstaendigen.</span>
+    </div>`;
+  } else {
+    html += `<div class="empty" style="border:1px solid #2d7">
+      Kette geprueft: ${chain.records || 0} Saetze in ${chain.files || 0} Monatsdatei(en), unversehrt.
+    </div>`;
+  }
+
+  // Tageskopf-Kette (Stufe 3): zweite Zeile unter der Kettenpruefung des Buchs.
+  const heads = cov.heads || null;
+  if (heads) {
+    const gapsText = (heads.gaps || []).join(', ');
+    html += `<div class="empty" style="border:1px solid ${heads.ok && !gapsText ? '#2d7' : '#c0392b'}">
+      Tageskopf-Kette: ${Number(heads.heads) || 0} Koepfe${heads.last_day ? ', zuletzt ' + escapeHtml(String(heads.last_day)) : ''},
+      <strong>${escapeHtml(heads.ok ? 'unversehrt' : 'gebrochen')}</strong>${heads.ok ? '' : ' bei ' + escapeHtml(String(heads.broken_at)) + ' &ndash; ' + escapeHtml(heads.reason || '')}${gapsText ? ', Luecken: ' + escapeHtml(gapsText) : ''}.
+    </div>`;
+  }
+
+  const offen = cov.open_deviations || [];
+  if (offen.length === 0) {
+    html += '<div class="empty">Keine offenen Abweichungen.</div>';
+  } else {
+    html += `<table><thead><tr>
+        <th>Quelle</th><th>Soll-Zeitpunkt</th><th>Zustand</th><th>Grund</th><th></th>
+      </tr></thead><tbody>` +
+      offen.map(d => `<tr>
+        <td>${escapeHtml(d.source || "")}</td>
+        <td>${escapeHtml((d.due || "").replace("T", " ").slice(0, 16))}</td>
+        <td><strong>${escapeHtml(d.status || "")}</strong></td>
+        <td>${escapeHtml(d.note || d.error || "")}</td>
+        <td><button onclick="ackDeviation('${escapeHtml(d.slot)}')">Quittieren</button></td>
+      </tr>`).join("") +
+      `</tbody></table>`;
+  }
+
+  // Vier-Augen (seit 2026-11-09): quittiert, aber von einer zweiten Person noch nicht bestätigt.
+  // Bestätigt wird im Admin-Panel (Reiter Nachweis) – hier nur sichtbar, damit niemand glaubt,
+  // der Fall sei schon geschlossen.
+  const pending = cov.pending_confirmations || [];
+  if (cov.four_eyes && pending.length) {
+    html += `<table style="margin-top:1.5em"><thead><tr>
+        <th>Quelle</th><th>Soll-Zeitpunkt</th><th>Zustand</th><th>Quittiert von</th><th>Begruendung</th><th>Bestaetigung</th>
+      </tr></thead><tbody>` +
+      pending.map(d => `<tr>
+        <td>${escapeHtml(d.source || "")}</td>
+        <td>${escapeHtml((d.due || "").replace("T", " ").slice(0, 16))}</td>
+        <td><strong>${escapeHtml(d.status || "")}</strong></td>
+        <td>${escapeHtml((d.ack || {}).actor || "")}</td>
+        <td>${escapeHtml((d.ack || {}).reason || "")}</td>
+        <td><em>ausstehend &ndash; zweite Person im Admin-Panel</em></td>
+      </tr>`).join("") +
+      `</tbody></table>`;
+  }
+
+  const je = cov.by_source || {};
+  const quellen = Object.keys(je).sort();
+  if (quellen.length) {
+    html += `<table style="margin-top:1.5em"><thead><tr>
+        <th>Quelle</th><th>OK</th><th>Teilweise</th><th>Fehlgeschlagen</th><th>Ausgefallen</th>
+      </tr></thead><tbody>` +
+      quellen.map(q => `<tr>
+        <td>${escapeHtml(q)}</td>
+        <td>${je[q].OK || 0}</td><td>${je[q].PARTIAL || 0}</td>
+        <td>${je[q].FAILED || 0}</td><td>${je[q].MISSED || 0}</td>
+      </tr>`).join("") +
+      `</tbody></table>`;
+  }
+  return html;
+}
+
+// Quittieren verlangt eine Begruendung — ein Klick ohne Grund ist kein Vorgang,
+// und genau diese Zeile liest spaeter ein Auditor.
+async function ackDeviation(slot) {
+  const reason = prompt("Begruendung fuer die Quittierung (Pflicht, steht spaeter im Nachweis):");
+  if (reason === null) return;
+  if (!reason.trim()) { showErr("Eine Quittierung ohne Begruendung ist nicht zulaessig."); return; }
+
+  const res = await authedWrite(`${API_BASE}/api/coverage/${encodeURIComponent(slot)}/ack`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({reason: reason})
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    showErr(d.detail || "Quittierung fehlgeschlagen \u2013 die Abweichung bleibt offen.");
+    return;
+  }
+  hideErr();
+  viewData.coverage = null;      // neu laden, nicht raten
+  renderList(viewData, false);
+}
+
+async function authedWrite(url, options) {
+  let res = await fetch(url, options);
+  if (res.status === 401) {
+    const ok = await openLoginModal();
+    if (!ok) return res;            // Benutzer hat abgebrochen
+    res = await fetch(url, options); // Retry mit frischem Cookie
+  }
+  if (res.status === 403) {
+    const d = await res.json().catch(() => ({}));
+    showErr(d.detail || 'Aktion nicht erlaubt.');
+  }
+  return res;
+}
+
+// Mode toggle
+const extendedCheckbox = document.getElementById('extendedModeCheckbox');
+const auditTab = document.querySelector('[data-tab="audit"]');
+
+extendedCheckbox.addEventListener('change', updateTabVisibility);
+
+function updateTabVisibility() {
+  const isExtended = extendedCheckbox.checked;
+  if (isExtended) {
+    auditTab.classList.remove('hidden');
+  } else {
+    auditTab.classList.add('hidden');
+    // If currently on audit tab, switch to open
+    const activeTab = document.querySelector('.tab.active');
+    if (activeTab && activeTab.dataset.tab === 'audit') {
+      switchTab('open');
+    }
+  }
+}
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    if (tab.classList.contains('hidden')) return;
+    switchTab(tab.dataset.tab);
+  });
+});
+
+function switchTab(tabName) {
+  const wanted = document.querySelector(`[data-tab="${tabName}"]`);
+  if (wanted && wanted.classList.contains('feature-off')) {
+    // Modul nicht freigeschaltet: der Reiter bleibt sichtbar, erklärt sich und wechselt nicht.
+    showErr(wanted.title || 'Dieses Modul ist in dieser Installation nicht freigeschaltet.');
+    return;
+  }
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const newTab = document.querySelector(`[data-tab="${tabName}"]`);
+  if (newTab && !newTab.classList.contains('hidden')) {
+    newTab.classList.add('active');
+    updateFilterBarVisibility(tabName);
+    renderList(viewData, false);
+  }
+}
+
+// Show/hide filter options based on active tab
+function updateFilterBarVisibility(tabName) {
+  if (tabName === 'audit') {
+    filterMaxAgeEl.style.display = 'none';
+    filterHealthcheckEl.style.display = '';
+  } else if (tabName === 'coverage') {
+    // Die Abdeckung hat ihre eigene Logik; die Ereignisfilter passen nicht.
+    filterMaxAgeEl.style.display = 'none';
+    filterHealthcheckEl.style.display = 'none';
+  } else if (tabName === 'archive') {
+    // Das Archiv zeigt gerade die Einträge, die der 180-Tage-Filter ausblendet.
+    filterMaxAgeEl.style.display = 'none';
+    filterHealthcheckEl.style.display = 'none';
+  } else {
+    filterMaxAgeEl.style.display = '';
+    filterHealthcheckEl.style.display = 'none';
+  }
+}
+
+// Summaries hash computation
+function computeSummariesHash(summariesObj) {
+  const keys = Object.keys(summariesObj).sort();
+  return keys.map(k => `${k}:${summariesObj[k].summary}`).join('|');
+}
+
+// Refresh data
+async function refresh() {
+  try {
+    hideErr();
+
+    // Load view data - FIXED: Preserve audit_logs
+    const newViewData = await api("/api/view");
+
+    // Preserve audit_logs if already loaded
+    if (viewData && viewData.audit_logs) {
+      newViewData.audit_logs = viewData.audit_logs;
+    }
+    viewData = newViewData;
+
+    // Load summaries data
+    try {
+      const newSummaries = await api("/api/summaries/latest");
+
+      // Convert array to object keyed by event_id.
+      // Guard: /api/summaries/latest liefert auf leerem System {} statt [] -> kein forEach.
+      const summariesObj = {};
+      (Array.isArray(newSummaries) ? newSummaries : []).forEach(s => {
+        summariesObj[s.event_id] = s;
+      });
+
+      // Check if summaries changed
+      const newHash = computeSummariesHash(summariesObj);
+      const hasChanges = lastSummariesHash !== null && lastSummariesHash !== newHash;
+
+      summariesData = summariesObj;
+      lastSummariesHash = newHash;
+
+      // If changes detected, add fade-in animation
+      if (hasChanges) {
+        console.log('Summaries updated - triggering fade-in animation');
+      }
+
+    } catch (e) {
+      console.warn("Summaries not available:", e);
+      summariesData = {};
+    }
+
+    renderTiles(viewData);
+    // Aktiven Tab nach Refresh beibehalten (nicht auf "open" zurückspringen)
+    renderList(viewData, lastSummariesHash !== null);
+
+    // Update status text
+    const now = new Date();
+    document.getElementById('updateStatusText').textContent =
+      `Auto-Update (60min) · ${now.toLocaleTimeString('de-DE')}`;
+
+  } catch (err) {
+    showErr("Error: " + err.message);
+  }
+}
+
+function renderTiles(view) {
+  const tilesDiv = document.getElementById("tiles");
+  const tiles = view.tiles || {};
+
+  let html = "";
+  for (const [source, counts] of Object.entries(tiles)) {
+    const open = counts.open || 0;
+    const inProgress = counts.in_progress || 0;
+
+    // Kachel ausblenden wenn keine Einträge
+    if (open === 0 && inProgress === 0) continue;
+
+    // Severity aus Aggregator (max_severity), nicht selbst berechnen
+    const severity = counts.max_severity || "green";
+
+    // "19 (3)" wenn in_progress > 0, sonst nur "19"
+    const countDisplay = inProgress > 0
+      ? `${open} <span class="tile-inprogress">(${inProgress})</span>`
+      : `${open}`;
+
+    html += `
+      <div class="tile ${severity}">
+        <div class="source">${source}</div>
+        <div class="count">${countDisplay}</div>
+      </div>
+    `;
+  }
+  tilesDiv.innerHTML = html;
+}
+
+let sortField = 'age';
+let sortDir = 'asc';
+
+function renderList(view, isUpdate = false) {
+  if (!view) return;
+
+  const activeTab = document.querySelector('.tab.active');
+  if (!activeTab) return;
+
+  const tab = activeTab.dataset.tab;
+  let list = [];
+  let title = "";
+
+  if (tab === "open") {
+    list = (view.items || []).filter(it => (it.status || "open") !== "done" && it.status !== "irrelevant");
+    title = "Open Events";
+  } else if (tab === "done") {
+    list = view.done_items || [];          // Aggregator liefert separates Feld
+    title = "Done Events";
+  } else if (tab === "irrelevant") {
+    list = view.irrelevant_items || [];    // Aggregator liefert separates Feld
+    title = "Irrelevant Events";
+  } else if (tab === "later") {
+    list = view.later_items || [];         // #21: zurückgestellt, ohne Aufbewahrungsfrist
+    title = "Für später vorgemerkt";
+  } else if (tab === "archive") {
+    list = view.archive_items || [];       // done/irrelevant älter als 180 Tage (Iron Rule 3)
+    title = "Archiv – abgeschlossen oder irrelevant, älter als 180 Tage";
+  } else if (tab === "coverage") {
+    title = "Abdeckung \u2013 Erfassungsgarantie";
+
+    if (!viewData.coverage) {
+      api("/api/coverage").then(resp => {
+        viewData.coverage = resp;
+        renderList(viewData, isUpdate);
+      }).catch(err => {
+        console.error("Abdeckung konnte nicht geladen werden:", err);
+        document.getElementById("listContent").innerHTML =
+          '<div class="empty">Abdeckungsbuch konnte nicht geladen werden</div>';
+      });
+      document.getElementById("listContent").innerHTML = '<div class="empty">Lade Abdeckung...</div>';
+      document.getElementById("listTitle").textContent = title;
+      return;
+    }
+
+    document.getElementById("listTitle").textContent = title;
+    document.getElementById("listContent").innerHTML = coverageHtml(viewData.coverage);
+    return;
+  } else if (tab === "audit") {
+    title = "Audit Trail";
+
+    // Load audit logs if not already loaded - FIXED: No ?days=30 filter
+    if (!viewData.audit_logs) {
+      // Fetch audit logs async
+      api("/api/audit").then(resp => {
+        // API gibt {logs: [...], count: N} zurück – wir brauchen nur das Array
+        viewData.audit_logs = Array.isArray(resp) ? resp : (resp.logs || []);
+        renderList(viewData, isUpdate);
+      }).catch(err => {
+        console.error("Failed to load audit logs:", err);
+        document.getElementById("listContent").innerHTML = '<div class="empty">Fehler beim Laden des Audit Trails</div>';
+      });
+      document.getElementById("listContent").innerHTML = '<div class="empty">Lade Audit Trail...</div>';
+      document.getElementById("listTitle").textContent = title;
+      return;
+    }
+
+    list = viewData.audit_logs || [];
+  }
+
+  document.getElementById("listTitle").textContent = title;
+
+  // Apply 180-day filter for event tabs (nicht im Archiv – das zeigt gerade die alten)
+  if (tab !== 'audit' && tab !== 'archive' && hideOldEventsCheckbox.checked) {
+    list = list.filter(it => (it.age_days ?? 0) <= 180);
+  }
+
+  // Apply healthcheck filter for audit tab
+  if (tab === 'audit' && hideHealthcheckOkCheckbox.checked) {
+    list = list.filter(log => {
+      const isHealthcheck = log.action === 'healthcheck_run' || log.action === 'HEALTHCHECK RUN';
+      if (!isHealthcheck) return true;
+      const status = log.details?.overall_status || '';
+      return status !== 'ok';
+    });
+  }
+
+  if (list.length === 0) {
+    document.getElementById("listContent").innerHTML = '<div class="empty">Keine Einträge</div>';
+    return;
+  }
+
+  // Render audit trail differently
+  if (activeTab.dataset.tab === "audit") {
+    const html = `
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Event</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(auditRowHtml).join('')}
+        </tbody>
+      </table>
+    `;
+    document.getElementById("listContent").innerHTML = html;
+    return;
+  }
+
+  // Sortierung anwenden
+  if (tab !== 'audit') {
+    list = [...list].sort((a, b) => {
+      let va, vb;
+      if (sortField === 'age') {
+        va = a.age_days ?? 9999;
+        vb = b.age_days ?? 9999;
+      } else if (sortField === 'date') {
+        va = a.date_published || '';
+        vb = b.date_published || '';
+      } else if (sortField === 'source') {
+        va = a.source || '';
+        vb = b.source || '';
+      } else if (sortField === 'severity') {
+        va = a.severity ?? 0;
+        vb = b.severity ?? 0;
+      }
+      if (va < vb) return sortDir === 'asc' ? -1 : 1;
+      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  // Normal event table
+  const html = `
+    <table>
+      <thead>
+        <tr>
+          <th onclick="setSort('age')" style="cursor:pointer;user-select:none;">Age ${sortField==='age' ? (sortDir==='asc'?'↑':'↓') : '⇅'}</th>
+          <th onclick="setSort('source')" style="cursor:pointer;user-select:none;">Source ${sortField==='source' ? (sortDir==='asc'?'↑':'↓') : '⇅'}</th>
+          <th>Title</th>
+          <th onclick="setSort('date')" style="cursor:pointer;user-select:none;">Date ${sortField==='date' ? (sortDir==='asc'?'↑':'↓') : '⇅'}</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${list.map(it => rowHtml(it, tab, isUpdate)).join('')}
+      </tbody>
+    </table>
+  `;
+  document.getElementById("listContent").innerHTML = html;
+  bindRowHandlers();
+}
+
+// FIXED: Robust audit row HTML supporting both old and new formats
+function setSort(field) {
+  if (sortField === field) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField = field;
+    sortDir = field === 'date' ? 'desc' : 'asc';
+  }
+  renderList(viewData);
+}
+
+function auditRowHtml(log) {
+  // Support both old and new log formats
+  // Old: {action, event_id, ts, old_status, new_status, user, ip}
+  // New: {action, event_id, event_title, timestamp, details, user}
+
+  // Format timestamp (handle both 'ts' and 'timestamp')
+  const rawTimestamp = log.timestamp || log.ts;
+  const timestamp = rawTimestamp
+    ? new Date(rawTimestamp).toLocaleString('de-DE', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+    : 'Unknown';
+
+  // Format action with color
+  const actionColors = {
+    'status_change': '#3b82f6',
+    'set_status': '#3b82f6',
+    'reset_all': '#f59e0b',
+    'event_created': '#10b981',
+    'event_deleted': '#ef4444',
+    'event_edited': '#f59e0b'
+  };
+  const actionColor = actionColors[log.action] || '#64748b';
+  const actionText = log.action.replace(/_/g, ' ').toUpperCase();
+
+  // Format details (handle both old and new format)
+  let detailsHtml = '';
+  if (log.action === 'status_change' || log.action === 'set_status') {
+    const oldStatus = log.old_status || log.details?.old_status || '?';
+    const newStatus = log.new_status || log.details?.new_status || '?';
+    detailsHtml = `<span style="color:#64748b;">${oldStatus}</span> → <span style="color:#10b981;font-weight:600;">${newStatus}</span>`;
+  } else if (log.action === 'reset_all') {
+    const changed = log.changed || log.details?.changed || 0;
+    detailsHtml = `Reset ${changed} events`;
+  } else if (log.details && (log.details.old_status || log.details.new_status)) {
+    const o = log.details.old_status || '?';
+    const n = log.details.new_status || '?';
+    detailsHtml = `<span style="color:#64748b">${o}</span> → <span style="color:#10b981;font-weight:600">${n}</span>`;
+  } else if (log.action === 'healthcheck_run' || log.action === 'HEALTHCHECK RUN') {
+    const status = log.details?.overall_status || (log.details && log.details.overall_status) || 'unknown';
+    const failed = log.details?.failed_checks || [];
+    const color = status === 'ok' ? '#10b981' : '#ef4444';
+    const label = status === 'ok' ? '✓ Alle Systeme OK' : `✗ Fehler: ${failed.join(', ')}`;
+    detailsHtml = `<span style="color:${color};font-weight:600;">${label}</span>`;
+  } else if (log.details && Object.keys(log.details).length > 0) {
+    detailsHtml = JSON.stringify(log.details);
+  }
+
+  // Event title (new format) or event_id (old format)
+  const hasTitle = log.event_title && log.event_title.length > 0;
+  const rawTitle = hasTitle ? log.event_title : `Event ${log.event_id?.substring(0, 12) || 'Unknown'}`;
+  const eventTitle = rawTitle.length > 80
+    ? rawTitle.substring(0, 80) + '...'
+    : rawTitle;
+
+  // User (default to 'unknown' for old logs)
+  const user = log.user || 'unknown';
+
+  // Event ID display
+  const eventIdShort = log.event_id
+    ? log.event_id.substring(0, 16) + '...'
+    : 'N/A';
+
+  return `
+    <tr>
+      <td style="white-space:nowrap;font-family:monospace;font-size:12px;">${timestamp}</td>
+      <td><span class="pill green">${user}</span></td>
+      <td><span style="color:${actionColor};font-weight:600;font-size:12px;">${actionText}</span></td>
+      <td>
+        <div style="font-size:13px;color:#1a202c;">${eventTitle}</div>
+        <div style="font-size:11px;color:#94a3b8;font-family:monospace;">${eventIdShort}</div>
+      </td>
+      <td style="font-size:12px;">${detailsHtml}</td>
+    </tr>
+  `;
+}
+
+function rowHtml(it, mode, isUpdate = false) {
+  const sev = it.severity || "green";
+  const age = it.age_days !== undefined ? `${it.age_days}d` : "-";
+  const status = it.status || "open";
+  const idAttr = `data-id="${it.id}"`;
+
+  const titleLink = it.url
+    ? `<a href="${it.url}" target="_blank" style="color:#1a202c;text-decoration:none;">${it.title}</a>`
+    : it.title;
+
+  // Tags (category + keywords aus Fetcher + LLM-Tags)
+  const tags = [];
+  if (it.category) tags.push(it.category);
+  if (it.keywords && Array.isArray(it.keywords)) tags.push(...it.keywords);
+  const llmTags = summariesData[it.id] && summariesData[it.id].tags;
+  let llmTagsHtml = '';
+  if (llmTags) {
+    const parts = [];
+    if (llmTags.doc_type && llmTags.doc_type !== it.category) parts.push(`<span class="tag tag-doctype">${llmTags.doc_type}</span>`);
+    if (llmTags.fachbereich && llmTags.fachbereich.length > 0)
+      llmTags.fachbereich.forEach(f => parts.push(`<span class="tag tag-fachbereich">${f}</span>`));
+    if (llmTags.person) parts.push(`<span class="tag tag-person">👤 ${llmTags.person}</span>`);
+    if (llmTags.gesetz_ref) parts.push(`<span class="tag tag-gesetz">⚖️ ${llmTags.gesetz_ref}</span>`);
+    if (llmTags.is_deadline) parts.push(`<span class="tag tag-deadline">⏰ Frist</span>`);
+    if (parts.length > 0) llmTagsHtml = `<div class="event-tags event-llmtags">${parts.join('')}</div>`;
+  }
+  // Entfernungen (2.2.3): an der Quelle entfernt → Markierung; offen → automatisch abgeschlossen
+  const tagParts = tags.map(t => `<span class="tag">${t}</span>`);
+  if (it.removed_at_source) tagParts.push(`<span class="tag tag-removed" title="Das Dokument ist an der Quelle nicht mehr vorhanden">🗑 An der Quelle entfernt</span>`);
+  if (it.auto_closed_reason === 'removed_at_source' && it.status_updated_by === 'system')
+    tagParts.push(`<span class="tag tag-auto" title="Automatisch abgeschlossen, weil an der Quelle entfernt und nie bearbeitet – auditiert als status_auto_close">automatisch abgeschlossen</span>`);
+  const tagsHtml = tagParts.length > 0
+    ? `<div class="event-tags">${tagParts.join('')}</div>`
+    : '';
+
+  // Betroffenheit aus Fakten (#31 Stufe 1) – nur wenn nennenswert, kein Modell beteiligt
+  const impact = it.impact;
+  const impactHtml = impact && impact.notable && impact.text
+    ? `<div class="event-impact" title="Aus Fakten abgeleitet: Änderungstyp, Dokumentart, Policy-Schlagworte, Inkrafttreten"><strong>Betroffenheit (Fakten):</strong> ${impact.text}</div>`
+    : '';
+
+  // Anhang-Titel
+  const attachments = it.attachments || [];
+  const attHtml = attachments.length > 0
+    ? `<div class="event-attachments">${attachments.map(a => {
+        const name = a.title || a.name || (a.url ? a.url.split('/').pop().replace(/[_-]+/g,' ').replace(/\.[a-z]+$/i,'') : 'Anhang');
+        const icon = (a.url||'').toLowerCase().endsWith('.pdf') ? '📄' : '📎';
+        return a.url
+          ? `<a href="${a.url}" target="_blank" class="att-link">${icon} ${name}</a>`
+          : `<span class="att-link">${icon} ${name}</span>`;
+      }).join('')}</div>`
+    : '';
+
+  // Datumsangaben aus Summary (wenn vorhanden)
+  const summaryEntry = summariesData[it.id];
+  let datesHtml = '';
+  if (summaryEntry && summaryEntry.dates && summaryEntry.dates.length > 0) {
+    const fristen = summaryEntry.dates.filter(d => d.type === 'frist');
+    const effective = summaryEntry.dates.filter(d => d.type === 'effective');
+    const uncertain = summaryEntry.dates.filter(d => d.type === 'uncertain');
+    const parts = [];
+    fristen.forEach(d => parts.push(`<span class="date-frist" title="Frist">⚠️ ${d.display}</span>`));
+    effective.forEach(d => parts.push(`<span class="date-effective" title="Inkrafttreten">📅 ${d.display}</span>`));
+    uncertain.forEach(d => parts.push(`<span class="date-uncertain" title="Weitere Datumsangabe (unklarer Kontext)">❓ ${d.display}</span>`));
+    if (parts.length > 0) datesHtml = `<div class="event-dates">${parts.join('')}</div>`;
+  }
+
+  // LLM Summary (wenn vorhanden)
+  const hasSummary = summaryEntry && summaryEntry.summary_short_llm;
+  const _mailSubject = encodeURIComponent(`RegMon: Kein Summary – ${it.title}`);
+  const _mailBody = encodeURIComponent(`Event-ID: ${it.id}\nTitel: ${it.title}\nURL: ${it.url}\nQuelle: ${it.source}\n\nBitte prüfen.`);
+  const _mailtoLink = `<a href="mailto:support@rh-advisory.de?subject=${_mailSubject}&body=${_mailBody}" style="font-size:0.85em;color:#888;">📧 Melden</a>`;
+  const summaryHtml = hasSummary
+    ? `<div class="summary">${summaryEntry.summary_short_llm}</div>`
+    : `<div class="summary" style="color:#aaa;font-style:italic;">Kein Summary verfügbar. ${_mailtoLink}</div>`;
+
+  // Deep Scan
+  const deepScan = summaryEntry && summaryEntry.deep_scan;
+  const deepScanDone = summaryEntry && summaryEntry.deep_scan_done;
+  let deepScanHtml = '';
+  if (deepScanDone && deepScan) {
+    const exec = deepScan.executive_summary || '';
+    const action = deepScan.action_required || '';
+    const deadline = deepScan.deadline_info || '';
+    deepScanHtml = `
+      <div class="deep-scan-result">
+        <div class="deep-scan-label">🔍 Deep Scan</div>
+        ${exec ? `<div class="deep-scan-section"><strong>Executive Summary</strong><p>${exec}</p></div>` : ''}
+        ${action && !deepScan.action_generic && !action.startsWith('Kein unmittelbarer Handlungsbedarf') ? `<div class="deep-scan-section deep-scan-action"><strong>⚡ Handlungsbedarf <span class="ai-label" title="Maschinell erzeugter Entwurf – Prüfung durch den Operator erforderlich">KI-Entwurf</span></strong><p>${action}</p></div>` : ''}
+        ${deadline && deadline !== 'Keine Fristen genannt.' ? `<div class="deep-scan-section deep-scan-deadline"><strong>⏰ Fristen</strong><p>${deadline}</p></div>` : ''}
+      </div>`;
+  } else {
+    const dsStatus = summaryEntry && summaryEntry.deep_scan_status;
+    if (dsStatus === 'queued') {
+      deepScanHtml = `<div class="deep-scan-pending">🔍 Deep Scan in Warteschlange (Position ${summaryEntry.deep_scan_position || '?'})</div>`;
+    } else if (dsStatus === 'analyzing') {
+      deepScanHtml = `<div class="deep-scan-pending">🔍 Deep Scan läuft...</div>`;
+    } else {
+      deepScanHtml = `<button class="deep-scan-btn" onclick="triggerDeepScan('${it.id}', this)">🔍 Deep Scan</button>`;
+    }
+  }
+
+  // Status buttons - FIXED: Added "In Progress" option
+  let statusButtons = '';
+
+  if (status === 'open') {
+    statusButtons = `
+      <div class="status-buttons">
+        <button class="status-btn in-progress" data-action="in_progress">⟳ In Progress</button>
+        <button class="status-btn done" data-action="done">✓ Done</button>
+        <button class="status-btn later" data-action="later" title="Für später vormerken">⏱ Später</button>
+        <button class="status-btn irrelevant" data-action="irrelevant">✗ Irrelevant</button>
+      </div>
+    `;
+  } else if (status === 'in_progress') {
+    statusButtons = `
+      <div class="status-buttons">
+        <button class="status-btn done" data-action="done">✓ Done</button>
+        <button class="status-btn later" data-action="later" title="Für später vormerken">⏱ Später</button>
+        <button class="status-btn irrelevant" data-action="irrelevant">✗ Irrelevant</button>
+        <button class="status-btn" data-action="open">↺ Reopen</button>
+      </div>
+    `;
+  } else if (status === 'later') {
+    statusButtons = `
+      <div class="status-buttons">
+        <button class="status-btn in-progress" data-action="in_progress">⟳ In Progress</button>
+        <button class="status-btn done" data-action="done">✓ Done</button>
+        <button class="status-btn irrelevant" data-action="irrelevant">✗ Irrelevant</button>
+        <button class="status-btn" data-action="open">↺ Reopen</button>
+      </div>
+    `;
+  } else {
+    // done or irrelevant
+    statusButtons = `
+      <div class="status-buttons">
+        <button class="status-btn" data-action="open">↺ Reopen</button>
+      </div>
+    `;
+  }
+
+  return `
+    <tr ${idAttr}>
+      <td>${age}</td>
+      <td><span class="pill blue">${it.source}</span></td>
+      <td>
+        <div>${titleLink}</div>
+        ${tagsHtml}
+        ${llmTagsHtml}
+        ${attHtml}
+        ${datesHtml}
+        ${impactHtml}
+        ${summaryHtml}
+        ${deepScanHtml}
+      </td>
+      <td style="white-space:nowrap;font-family:monospace;font-size:0.875rem;">${it.date_published || '-'}</td>
+      <td>${statusButtons}</td>
+    </tr>
+  `;
+}
+
+function bindRowHandlers() {
+  document.querySelectorAll('.status-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const row = btn.closest('tr');
+      const eventId = row.dataset.id;
+      const status = btn.dataset.action;
+
+      try {
+        const res = await authedWrite(`${API_BASE}/api/event/${eventId}/status`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({status})
+        });
+        if (res.ok) {
+          await refresh();
+        } else if (res.status !== 401 && res.status !== 403) {
+          showErr(`Statusänderung fehlgeschlagen (HTTP ${res.status})`);
+        }
+      } catch (err) {
+        showErr(err.message);
+      }
+    };
+  });
+}
+
+async function triggerDeepScan(eventId, btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳ Wird eingereiht...';
+  try {
+    const resp = await fetch(`${API_BASE}/api/event/${eventId}/deep-scan`, {method: "POST"});
+    const data = await resp.json();
+    if (data.status === 'queued') {
+      const td = btn.closest('td');
+      td.innerHTML = td.innerHTML.replace(
+        /<button[^>]*deep-scan-btn[^>]*>[\s\S]*?<\/button>/,
+        `<div class="deep-scan-pending">🔍 Deep Scan in Warteschlange (Position ${data.position + 1})</div>`
+      );
+    } else if (data.status === 'duplicate') {
+      btn.textContent = '⏳ Bereits in Queue';
+    } else {
+      btn.textContent = '❌ Queue voll';
+      btn.disabled = false;
+    }
+  } catch (err) {
+    btn.textContent = '❌ Fehler';
+    btn.disabled = false;
+    showErr(err.message);
+  }
+}
+
+async function resetAll() {
+  if (!confirm('Reset all events to "open"?')) return;
+
+  try {
+    const res = await authedWrite(`${API_BASE}/api/reset-all`, {method: "POST"});
+    if (res.ok) {
+      await refresh();
+    } else if (res.status !== 401 && res.status !== 403) {
+      showErr(`Reset fehlgeschlagen (HTTP ${res.status})`);
+    }
+  } catch (err) {
+    showErr(err.message);
+  }
+}
+
+// Start auto-update
+function startAutoUpdate() {
+  // Initial load
+  refresh();
+
+  // Auto-update every 60 minutes
+  autoUpdateInterval = setInterval(refresh, 3600000);
+}
+
+// Lizenz-Footer + Ansicht.
+function _ensureLicenseFooter() {
+  if (document.getElementById('licFooter')) return;
+  const f = document.createElement('div');
+  f.id = 'licFooter';
+  f.style.cssText = 'text-align:center;padding:1rem;font-size:0.75rem;color:#94a3b8;';
+  f.innerHTML = 'RegMon · <a href="#" id="licFooterLink" style="color:inherit;text-decoration:underline;">Lizenzvereinbarung</a>';
+  document.body.appendChild(f);
+  document.getElementById('licFooterLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    try {
+      const r = await fetch('/api/legal/license');
+      const d = await r.json();
+      const w = window.open('', '_blank');
+      if (w) { w.document.title = 'RegMon Lizenz v' + (d.version || ''); w.document.body.style.cssText = 'white-space:pre-wrap;font-family:sans-serif;padding:2rem;max-width:800px;margin:auto;line-height:1.55;'; w.document.body.textContent = d.text || ''; }
+    } catch (err) { /* ignore */ }
+  });
+}
+
+// Darstellungs-Config anwenden (Dark Mode / Akzent / Branding).
+// Read-only aus /api/display; gepflegt im Settings-Admin (Port 8051).
+async function applyDisplayConfig() {
+  try {
+    const res = await fetch('/api/display');
+    if (!res.ok) return;
+    const cfg = await res.json();
+    document.body.classList.toggle('dark', !!cfg.dark_mode);
+    if (cfg.accent_color) {
+      document.documentElement.style.setProperty('--accent', cfg.accent_color);
+    }
+    if (cfg.brand_name) {
+      const h1 = document.querySelector('#header h1');
+      if (h1) {
+        // Nur den Text ersetzen – die Bildmarke (Inline-SVG) bleibt stehen.
+        const mark = h1.querySelector('svg');
+        h1.textContent = `${cfg.brand_name} Dashboard`;
+        if (mark) h1.insertBefore(mark, h1.firstChild);
+      }
+      document.title = `${cfg.brand_name} Dashboard`;
+    }
+  } catch (e) { /* kosmetisch – Fehler ignorieren */ }
+}
+
+// Freischaltung (Feature-Katalog): Module, die nicht lizenziert sind, bleiben
+// sichtbar und ausgegraut – man sieht, was es gibt, und was gilt. Antwortet der
+// Endpunkt nicht (ältere Instanz, statische Demo), bleibt alles wie bisher.
+async function applyFeatureGates() {
+  try {
+    const res = await fetch(`${API_BASE}/api/features`, {cache: 'no-store'});
+    if (!res.ok) return;
+    const d = await res.json();
+    const mods = d.modules || {};
+    const names = {};
+    (d.catalog || []).forEach(c => { names[c.id] = c.name; });
+    const lock = (tabId, moduleId) => {
+      const t = document.querySelector(`[data-tab="${tabId}"]`);
+      if (!t) return;
+      t.classList.add('feature-off');
+      t.title = `Modul „${names[moduleId] || moduleId}“ ist in dieser Installation nicht freigeschaltet.`;
+    };
+    if (mods.coverage === false) lock('coverage', 'coverage');
+    if (mods.deep_scan === false) document.body.classList.add('deep-scan-off');
+  } catch (e) { /* kosmetisch – Fehler ignorieren */ }
+}
+
+// Initialize
+applyDisplayConfig();
+applyFeatureGates();
+_ensureLicenseFooter();
+refreshAuthState();
+updateTabVisibility();
+updateFilterBarVisibility('open');
+startAutoUpdate();
+</script>
+
+</body>
+</html>
